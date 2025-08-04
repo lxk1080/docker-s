@@ -13,13 +13,13 @@
 
 1. `docker version`：查看 docker 版本信息
 2. `docker info`：查看docker 环境的一些基本信息
-3. `docker image pull nginx`：拉取镜像（docker hub）
+3. `docker image pull nginx`：拉取镜像（默认 registry 是 docker hub）
 3. `docker image ls`：查看环境下所有的镜像
 4. `docker container ls [-a]`：查看环境下所有的容器
     - `-a`：包括已经停止运行的
     - 也可以使用 `docker container ps`，或直接省略 container 关键字：`docker ps`
     - 对于 container 的大部分操作，都可以把 container 关键字省略掉
-5. `docker container run nginx`：创建并启动容器（如果本地没有会尝试线上拉取）
+5. `docker container run nginx`：创建并启动容器（如果本地没有，则会尝试线上拉取）
 6. `docker container stop <name or ID>`：停止容器运行
 7. `docker container rm <name or ID> [-f]`：删除容器
     - `-f`：强制删除一个正在运行中的容器
@@ -55,3 +55,22 @@
     - 例如：`docker container exec -it <nginxID> sh`，将会进入到容器内部的 shell 环境
     - 这种方式如果输入 `exit`，会退出 shell 模式，但容器不会停止运行，只是退出这个 shell 环境
     - `-it`：进入交互模式
+
+### 5、docker 相关原理
+
+1. 容器不是 Mini 虚拟机
+    - 容器其实是进程
+    - 容器中的进程被限制了对 CPU 内存等资源的访问
+    - 当进程停止后，容器就退出了
+
+
+2. `docker container run` 背后做了哪些事情？
+    - 例如：`docker container run -d --publish 8080:80 --name webhost nginx`
+    - 在本地查找是否有 nginx 这个 image 镜像，有就直接创建容器，如果没有发现
+    - 去远程的 image registry 查找 nginx 镜像（默认的 registry 是 Docker Hub)
+    - 下载最新版本的 nginx 镜像（默认 nginx:latest)
+    - 基于 nginx 镜像来创建一个新的容器，并且准备运行
+    - docker engine 分配给这个容器一个虚拟 IP 地址
+    - 在宿主机上打开 8080 端口并把容器的 80 端口转发到宿主机上（可以通过 127.0.0.1:8080 访问）
+    - 这里给容器指定了一个名字 `webhost`，如果不指定，则会自动生成一个随机的名字
+    - 启动容器，运行指定的命令（这里默认会去执行一个 shell 脚本去启动 nginx，当然，你也可以自己指定一个命令去执行）
